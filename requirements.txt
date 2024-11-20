@@ -1,0 +1,9 @@
+kaggle
+py7zr
+pandas[pyarrow]
+polars
+seaborn
+numpy
+jupytext
+jupyterlab
+nbconvert
