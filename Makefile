@@ -1,3 +1,5 @@
+.PHONY: all download sessionize notebooks
+
 all: download sessionize notebooks
 
 download:

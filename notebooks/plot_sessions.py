@@ -2,7 +2,7 @@
 import polars as pl
 from skrub import TableReport
 
-tx = pl.read_parquet("data/sessions.pq")
+tx = pl.read_parquet("../data/sessions.pq")
 TableReport(tx)
 
 # %%
@@ -45,10 +45,9 @@ msnos = [
     'Gm6nq94d1kn48YpqQzvWshpfQ2F218e+ISrtxjaA/EI=',
     'bIwD9DI9jlYg0MMZT5oAj7leSYWc0p9qKfA199s3+CE=',
 ]
-weird_msno = 'mxpRHNaHkFo7IfnKAqUaA8xrgpaDnnZDsjJvw8gH+FQ='
 
 log = (
-    pl.scan_csv("data/user_logs.csv")
+    pl.scan_csv("../data/user_logs.csv")
     .with_columns(
         to_datetime("date")
     )
