@@ -1,3 +1,4 @@
+import polars as pl
 from pathlib import Path
 import kaggle
 from py7zr import SevenZipFile
@@ -22,6 +23,15 @@ def download(
         )
         with SevenZipFile(PATH_DIR / filename_zip, mode="r") as zip:
             zip.extractall(path=PATH_DIR)
+
+        # Convert to parquet for more efficient processing.
+        (
+            pl.scan_csv(PATH_DIR / f"{filename}.csv")
+            .sink_parquet(PATH_DIR / f"{filename}.pq")
+        )
+        # Remove intermediary files from disk.
+        for ext in [".csv.7z", ".csv"]:
+            (PATH_DIR / f"{filename}{ext}").unlink()
 
 
 if __name__ == "__main__":

@@ -3,10 +3,10 @@
 all: download sessionize notebooks
 
 download:
-	python download.py
+	python scripts/download.py
 
 sessionize:
-	python sessionize.py
+	python scripts/sessionize.py
 
 notebooks:
 	jupytext notebooks/plot_sessions.py --output notebooks/plot_sessions.ipynb

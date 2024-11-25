@@ -1,39 +1,42 @@
+from pathlib import Path
 from time import time
 from tqdm import tqdm
 import polars as pl
 
-from download import PATH_DIR
+PATH_DIR = Path("./data")
 
 
 def sessionize_transactions(
-    input_path_csv=PATH_DIR / "transactions.csv",
-    output_path_parquet=PATH_DIR / "sessions.pq",
+    input_path_transactions=PATH_DIR / "transactions.pq",
+    output_path_sessions=PATH_DIR / "sessions.pq",
 ):
+    print("Sessionizing transactions...")
     tic = time()
     (
-        pl.scan_csv(input_path_csv)
+        pl.scan_parquet(input_path_transactions)
         .pipe(clean_dates)
         .pipe(is_churn)
         .pipe(split_sessions)
         .pipe(session_features)
         .collect()
-        .write_parquet(output_path_parquet)
+        .write_parquet(output_path_sessions)
     )
     duration = time() - tic
-    print(f"Wrote {output_path_parquet} - Took {duration:.1f}s")
+    print(f"Wrote {output_path_sessions} - Took {duration:.1f}s")
 
 
 def sessionize_logs(
-    input_path_log_csv=PATH_DIR / "user_logs.csv",
-    input_path_session_parquet=PATH_DIR / "sessions.pq",
+    input_path_log=PATH_DIR / "user_logs.pq",
+    input_path_session=PATH_DIR / "sessions.pq",
     output_path_parquet_ds=PATH_DIR / "user_logs",
     chunk_size=100_000,
 ):
+    print("Sessionizing logs...")
     tic = time()
     output_path_parquet_ds.mkdir(exist_ok=True)
 
     msnos = (
-        pl.scan_parquet(input_path_session_parquet)
+        pl.scan_parquet(input_path_session)
         .select(pl.col("msno"))
         .unique()
         .collect()
@@ -47,8 +50,8 @@ def sessionize_logs(
         (
             _join_session_id(
                 msnos_,
-                input_path_log_csv,
-                input_path_session_parquet,
+                input_path_log,
+                input_path_session,
             )
             .collect()
             .write_parquet(output_path_parquet_ds / f"{idx}.pq")
@@ -60,15 +63,15 @@ def sessionize_logs(
 
 def _join_session_id(
     msnos,
-    input_path_log_csv,
-    input_path_session_parquet,
+    input_path_log,
+    input_path_session,
 ):
     """
     Add session_id to logs using the most recent session_start_date,
     for each user.
     """
     sessions = (
-        pl.scan_parquet(input_path_session_parquet)
+        pl.scan_parquet(input_path_session)
         .select(
             pl.col("msno", "session_id", "session_start_date"),
         )
@@ -76,7 +79,7 @@ def _join_session_id(
     )
 
     return (
-        pl.scan_csv(input_path_log_csv)
+        pl.scan_parquet(input_path_log)
         .filter(pl.col("msno").is_in(msnos))
         .with_columns(to_datetime("date"))
         .join_asof(
@@ -155,21 +158,21 @@ def split_sessions(
                 separator="_",
             ).alias("session_id"),
             pl.col("membership_expire_date")
-            .shift(1)
-            .over("msno")
-            .alias("prev_expire_date"),
+                .shift(1)
+                .over("msno")
+                .alias("prev_expire_date"),
             pl.col("transaction_date").alias("session_start_date"),
             pl.col("membership_expire_date")
-            .max()
-            .dt.offset_by(offset)
-            .over("msno", "session")
-            .alias("session_end_date"),
+                .max()
+                .dt.offset_by(offset)
+                .over("msno", "session")
+                .alias("session_end_date"),
             # We want the first transaction to take the churn status.
             pl.col("churn").max().over("msno", "session"),
             pl.col("transaction_date")
-            .max()
-            .over("msno", "session")
-            .alias("max_transaction_date"),
+                .max()
+                .over("msno", "session")
+                .alias("max_transaction_date"),
         )
         .with_columns(pl.min_horizontal("session_end_date", end_of_study))
         # Only keep the first transaction (since this is sorted).
@@ -180,18 +183,18 @@ def split_sessions(
 def session_features(tx):
     return tx.sort("msno", "transaction_date").with_columns(
         (pl.col("session_end_date") - pl.col("session_start_date"))
-        .dt.total_days()
-        .alias("duration"),
+            .dt.total_days()
+            .alias("duration"),
         (
             pl.col("session_start_date")
             - pl.col("session_end_date").shift(1).over("msno")
         )
-        .dt.total_days()
-        .fill_null(0)
-        .alias("days_between_subs"),
+            .dt.total_days()
+            .fill_null(0)
+            .alias("days_between_subs"),
         (pl.col("session_start_date") - pl.col("session_start_date").min().over("msno"))
-        .dt.total_days()
-        .alias("days_from_initial_start"),
+            .dt.total_days()
+            .alias("days_from_initial_start"),
     )
 
 
@@ -200,5 +203,5 @@ def to_datetime(column_name):
 
 
 if __name__ == "__main__":
-    # sessionize_transactions()
+    sessionize_transactions()
     sessionize_logs()
