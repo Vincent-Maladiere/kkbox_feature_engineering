@@ -41,3 +41,11 @@ problem into a survival analysis one, using sessionization!
 make sessionize
 ```
 This operation should also takes a few minutes.
+
+### Notebooks
+
+Finally, execute the starter feature engineering notebooks with the command:
+```shell
+make notebooks
+```
+This command will generate html files in notebooks, which you can directly open.

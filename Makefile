@@ -1,4 +1,8 @@
-.PHONY: all download sessionize notebooks
+scripts := $(wildcard notebooks/plot_*.py)
+notebooks := $(patsubst %.py,%.ipynb,$(scripts))
+rendered-notebooks := $(patsubst %.py,%.html,$(scripts))
+
+PHONY: all download sessionize notebooks rendered-notebooks
 
 all: download sessionize notebooks
 
@@ -8,6 +12,13 @@ download:
 sessionize:
 	python scripts/sessionize.py
 
-notebooks:
-	jupytext notebooks/plot_sessions.py --output notebooks/plot_sessions.ipynb
-	jupyter nbconvert notebooks/plot_sessions.ipynb --execute --to html
+notebooks: $(notebooks) $(rendered-notebooks)
+
+%.ipynb: %.py
+	jupytext $< --output $@
+
+%.html: %.ipynb
+	jupyter nbconvert $< --execute --to html
+
+clean:
+	rm -f notebooks/*.ipynb
