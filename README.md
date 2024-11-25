@@ -34,8 +34,8 @@ This operation should takes a few minutes.
 
 ### Preprocessing
 
-Once the download is over, you are ready to apply some basic preprocessing to turn
-this binary classification problem into a survival analysis one, using sessionization!
+You are now ready to apply some preprocessing to turn this binary classification
+problem into a survival analysis one, using sessionization!
 
 ```shell
 make sessionize
