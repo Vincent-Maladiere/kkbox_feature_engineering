@@ -93,12 +93,15 @@ def _join_session_id(
 
 
 def clean_dates(tx):
-    return tx.with_columns(
-        to_datetime("transaction_date"),
-        to_datetime("membership_expire_date"),
-    ).filter(
-        (pl.col("membership_expire_date") > pl.datetime(2015, 1, 1))
-        & (pl.col("transaction_date") <= pl.col("membership_expire_date"))
+    return (
+        tx.with_columns(
+            to_datetime("transaction_date"),
+            to_datetime("membership_expire_date"),
+        )
+        .filter(
+            (pl.col("membership_expire_date") > pl.datetime(2015, 1, 1))
+            & (pl.col("transaction_date") <= pl.col("membership_expire_date"))
+        )
     )
 
 
@@ -123,8 +126,7 @@ def is_churn(
         )
         .with_columns(
             (pl.col("next") - pl.col("membership_expire_date"))
-            .dt.total_days()
-            .alias("days_without_membership"),
+                .dt.total_days().alias("days_without_membership"),
         )
         .with_columns(
             (pl.col("days_without_membership") > churn_threshold_days).alias("churn")
@@ -181,20 +183,26 @@ def split_sessions(
 
 
 def session_features(tx):
-    return tx.sort("msno", "transaction_date").with_columns(
-        (pl.col("session_end_date") - pl.col("session_start_date"))
-            .dt.total_days()
-            .alias("duration"),
-        (
-            pl.col("session_start_date")
-            - pl.col("session_end_date").shift(1).over("msno")
+    return (
+        tx.sort("msno", "transaction_date")
+        .with_columns(
+            (pl.col("session_end_date") - pl.col("session_start_date"))
+                .dt.total_days()
+                .alias("duration"),
+            (
+                pl.col("session_start_date")
+                - pl.col("session_end_date").shift(1).over("msno")
+            )
+                .dt.total_days()
+                .fill_null(0)
+                .alias("days_between_subs"),
+            (
+                pl.col("session_start_date")
+                - pl.col("session_start_date").min().over("msno")
+            )
+                .dt.total_days()
+                .alias("days_from_initial_start"),
         )
-            .dt.total_days()
-            .fill_null(0)
-            .alias("days_between_subs"),
-        (pl.col("session_start_date") - pl.col("session_start_date").min().over("msno"))
-            .dt.total_days()
-            .alias("days_from_initial_start"),
     )
 
 

@@ -38,6 +38,10 @@ def sample_obs_date(
     strategy="uniform",
     random_state=None
 ):
+    """Sample observation date for each sample, proportional to their duration.
+
+    The duration is defined as end_date_col - start_date_col.
+    """
     df = (
         df.with_columns(
             pl.col(end_date_col).sub(pl.col(start_date_col))
@@ -110,6 +114,10 @@ def temp_agg_join(
     selector,
     ops,
 ):
+    """Filter, aggregate and join an auxiliary table on a main table.
+
+    The auxiliary table is filtered with aux_date_col < main_date_col.
+    """
     # If main_key is unique, then grouping and joining on (main_key, main_date_col)
     # is the same as using (main_key) only.
     aux_agg = (
