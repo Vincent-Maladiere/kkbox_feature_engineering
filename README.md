@@ -3,8 +3,8 @@
 The KKBOX dataset is a multi-tables classification / survival analysis challenge,
 with time-varying features.
 
-This repo will help you download the dataset, preprocess and apply feature engineering
-for machine learning.
+This repo will help you download the dataset, preprocess it and apply
+feature engineering for machine learning.
 
 ## Set up
 
