@@ -47,7 +47,7 @@ msnos = [
 ]
 
 log = (
-    pl.scan_csv("../data/user_logs.csv")
+    pl.scan_parquet("../data/user_logs.pq")
     .with_columns(
         to_datetime("date")
     )
