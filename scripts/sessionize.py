@@ -41,6 +41,7 @@ def sessionize_logs(
         .unique()
         .collect()
     )
+    # XXX: Can we leverage DuckDB instead of implementing partioning ourselves?
     n_rows = msnos.shape[0]
     n_chunks = n_rows // chunk_size + 1
 
@@ -137,7 +138,7 @@ def is_churn(
 def split_sessions(
     tx,
     end_of_study=pl.datetime(2017, 3, 1),
-    churn_threshold_days=30,
+    churn_threshold_days=0,
 ):
     offset = f"{churn_threshold_days}d"
     return (

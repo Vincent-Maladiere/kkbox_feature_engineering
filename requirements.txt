@@ -3,8 +3,9 @@ py7zr
 pandas[pyarrow]
 polars
 seaborn
-numpy
 jupytext
 jupyterlab
 nbconvert
 skrub
+lifelines
+git+https://github.com/soda-inria/hazardous.git@add_c_index
