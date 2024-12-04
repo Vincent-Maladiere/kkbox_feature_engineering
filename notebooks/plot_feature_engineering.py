@@ -32,9 +32,6 @@ msnos = session.select("msno").unique()
 session.shape
 
 # %%
-from sklearn.model_selection import GroupShuffleSplit
-
-
 def to_datetime(column_name):
     return pl.col(column_name).cast(pl.String).str.to_datetime("%Y%m%d")
 
