@@ -77,12 +77,14 @@ def _join_session_id(
             pl.col("msno", "session_id", "session_start_date"),
         )
         .filter(pl.col("msno").is_in(msnos))
+        .sort("session_start_date")
     )
 
     return (
         pl.scan_parquet(input_path_log)
         .filter(pl.col("msno").is_in(msnos))
         .with_columns(to_datetime("date"))
+        .sort("date")
         .join_asof(
             sessions,
             left_on="date",
@@ -138,7 +140,7 @@ def is_churn(
 def split_sessions(
     tx,
     end_of_study=pl.datetime(2017, 3, 1),
-    churn_threshold_days=0,
+    churn_threshold_days=30,
 ):
     offset = f"{churn_threshold_days}d"
     return (
@@ -195,7 +197,6 @@ def session_features(tx):
                 - pl.col("session_end_date").shift(1).over("msno")
             )
                 .dt.total_days()
-                .fill_null(0)
                 .alias("days_between_subs"),
             (
                 pl.col("session_start_date")

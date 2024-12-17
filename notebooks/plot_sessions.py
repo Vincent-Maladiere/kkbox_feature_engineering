@@ -3,7 +3,7 @@ import polars as pl
 from skrub import TableReport
 
 tx = pl.read_parquet("../data/sessions.pq")
-TableReport(tx)
+TableReport(tx, n_rows=20)
 
 # %%
 from matplotlib import pyplot as plt
@@ -16,17 +16,24 @@ def to_datetime(column_name):
 
 def plot_sessions_logs(tx, log, msnos):
 
-    fix, axes = plt.subplots(ncols=1, nrows=len(msnos), sharex=True)
+    msnos = set(msnos) & set(log["msno"].unique())
 
-    for idx, ax in enumerate(axes):
+    fix, axes = plt.subplots(
+        figsize=(8, 2 * len(msnos)), ncols=1, nrows=len(msnos), sharex=True
+    )
+    
+    for msno, ax in zip(msnos, axes):
+        log_ = log.filter(pl.col("msno") == msno)
+        if log_.shape[0] < 2:
+            continue
         sns.histplot(
-            log.filter(pl.col("msno") == msnos[idx]),
+            log_,
             x="date",
             weights="num_unq",
             ax=ax,
             binwidth=3,
         )
-        tx_ = tx.filter(pl.col("msno") == msnos[idx])
+        tx_ = tx.filter(pl.col("msno") == msno)
         y_lim = ax.get_ylim()
         for (start, end, churn) in tx_[
             ["session_start_date", "session_end_date", "churn"]
@@ -41,10 +48,7 @@ def plot_sessions_logs(tx, log, msnos):
     plt.show()
 
 
-msnos = [
-    'Gm6nq94d1kn48YpqQzvWshpfQ2F218e+ISrtxjaA/EI=',
-    'bIwD9DI9jlYg0MMZT5oAj7leSYWc0p9qKfA199s3+CE=',
-]
+msnos = tx.select(pl.col("msno")).sample(20).to_series(0).to_list()
 
 log = (
     pl.scan_parquet("../data/user_logs.pq")
@@ -58,4 +62,6 @@ log = (
 
 plot_sessions_logs(tx, log, msnos)
 
+# %%
+TableReport(log)
 # %%
